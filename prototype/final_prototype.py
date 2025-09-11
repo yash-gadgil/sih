@@ -1,4 +1,5 @@
 from flask import Flask, request, g
+from flask_cors import CORS
 import pdfplumber
 from io import BytesIO
 import os
@@ -27,6 +28,8 @@ _PHONE_PATTERNS = [
 
 embedder = SentenceTransformer("all-MiniLM-L6-v2")
 app = Flask(__name__)
+# Enable Cross-Origin Resource Sharing for all routes (adjust origins if needed)
+CORS(app)
 
 
 def get_milvus():
