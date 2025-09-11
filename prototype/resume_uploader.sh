@@ -2,7 +2,7 @@
 
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-BASE_DIR="${SCRIPT_DIR}/example_resumes"
+BASE_DIR="${SCRIPT_DIR}/../example_resumes"
 URL="http://127.0.0.1:5000/upload-cv"
 
 for i in {1..5}; do

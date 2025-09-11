@@ -1,8 +1,8 @@
 # Getting Set up
 
-## python setup
+## prototype setup
 
-from the project's root directory
+from the project's prototype directory
 
 ```
 pip install -r requirements.txt
