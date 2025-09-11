@@ -1,0 +1,8 @@
+flask
+pdfplumber
+beautifulsoup4
+sentence-transformers
+pymilvus
+python-dotenv
+tika
+scikit-learn
