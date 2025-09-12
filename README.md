@@ -1,4 +1,6 @@
-# PM Internship Frontend
+# PM Internship
+
+# Frontend
 
 A modern Next.js frontend application built with TypeScript and Tailwind CSS.
 
@@ -69,11 +71,43 @@ src/
 - [Tailwind CSS](https://tailwindcss.com/) - Utility-first CSS framework
 - [ESLint](https://eslint.org/) - Code linting
 
-## Learn More
+# Backend
 
-To learn more about Next.js, take a look at the following resources:
+## prototype setup
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+from the project's prototype directory
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+```
+pip install -r requirements.txt
+```
+
+start the server and once you see 
+
+```
+ * Running on http://127.0.0.1:5000
+```
+
+upload the resumes with
+
+```
+chmod +x ./resume_uploader.sh
+./resume_uploader.sh
+```
+
+2 endpoints are exposed
+
+Uploading CVs
+
+to manually upload a cv from a folder
+
+```
+curl -X POST -F 'file=@"File Path"' http://127.0.0.1:5000/upload-cv
+```
+
+Getting Eligible Candidates
+
+```
+curl --get 'http://127.0.0.1:5000/eligible-candidates' --data-urlencode 'q=The Requirements for the Internship' --data-urlencode 'k=6'
+```
+
+where q is the requirements text and k is the no. of candidates to be returned's limit
