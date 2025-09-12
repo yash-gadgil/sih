@@ -11,11 +11,11 @@ function validateEnv(): EnvConfig {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
   
   if (!baseUrl) {
-    console.warn('NEXT_PUBLIC_BASE_URL is not set, using default: http://localhost:3001');
+    console.warn('NEXT_PUBLIC_BASE_URL is not set, using default: http://127.0.0.1:5000');
   }
 
   return {
-    BASE_URL: baseUrl || 'http://localhost:3001',
+  BASE_URL: baseUrl || 'http://127.0.0.1:5000',
     NODE_ENV: (process.env.NODE_ENV as EnvConfig['NODE_ENV']) || 'development',
     API_TIMEOUT: process.env.NEXT_PUBLIC_API_TIMEOUT 
       ? parseInt(process.env.NEXT_PUBLIC_API_TIMEOUT, 10) 
