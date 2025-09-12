@@ -1,4 +1,4 @@
-from flask import Flask, request, g
+from flask import Flask, request, send_file, g
 from flask_cors import CORS
 import pdfplumber
 from io import BytesIO
@@ -6,8 +6,17 @@ import os
 from sentence_transformers import SentenceTransformer
 import re
 from pymilvus import MilvusClient 
+from pathlib import Path
+import uuid
+from werkzeug.utils import secure_filename
+
+embedder = SentenceTransformer("all-MiniLM-L6-v2")
+app = Flask(__name__)
+CORS(app)
 
 
+PDF_STORAGE = Path(app.root_path).parent / "resume_holder"
+PDF_STORAGE.mkdir(parents=True, exist_ok=True)
 DB_PATH = os.path.abspath(os.environ.get("MILVUS_LITE_DB", "./milvus_demo.db"))
 EMAIL_RE = re.compile(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}")
 LINKEDIN_RE = re.compile(r"(https?://)?(www\.)?linkedin\.com/[^\s]+", re.IGNORECASE)
@@ -24,12 +33,6 @@ _PHONE_PATTERNS = [
 	re.compile(r"(?<!\d)(?:\+?1[\s\-.]*)?(?:\(\d{3}\)|\d{3})[\s\-.]?\d{3}[\s\-.]?\d{4}(?!\d)"),
 	re.compile(r"(?<!\d)\+?\d(?:[\s\-.]?\d){6,15}(?!\d)"),
 ]
-
-
-embedder = SentenceTransformer("all-MiniLM-L6-v2")
-app = Flask(__name__)
-# Enable Cross-Origin Resource Sharing for all routes (adjust origins if needed)
-CORS(app)
 
 
 def get_milvus():
@@ -49,7 +52,7 @@ def ensure_collection(client):
 		)
 		
 def _normalize_digits(s: str) -> str:
-    return re.sub(r"\D", "", s)
+	return re.sub(r"\D", "", s)
 
 def find_phone_numbers(text: str):
 	hits = []
@@ -71,7 +74,7 @@ def redact_phone_numbers(text: str) -> str:
 		redacted = pat.sub(repl, redacted)
 	return redacted
 
-def split_sections(text):
+def split_sections(text: str):
 	sections = {}
 	current_header = "other"
 	sections[current_header] = []
@@ -110,6 +113,9 @@ def extract_metadata(text: str):
 
 	return metadata, clean_text
 
+def _normalize_whitespace(text: str):
+	return re.sub(r"\s+", " ", text).strip()
+
 def _to_plain(hit):
 	if isinstance(hit, dict):
 		entity = hit.get("entity") or {}
@@ -120,6 +126,7 @@ def _to_plain(hit):
 			"score": hit.get("distance") or hit.get("score"),
 			"email": entity.get("email"),
 			"phone": entity.get("phone"),
+			"pdf_id": entity.get("pdf_id"),
 		}
 	
 	idv = getattr(hit, "id", None)
@@ -127,14 +134,16 @@ def _to_plain(hit):
 	entity = getattr(hit, "entity", None)
 	email = None
 	phone = None
+	pdf_id = None
 	if isinstance(entity, dict):
 		email = entity.get("email")
 		phone = entity.get("phone")
+		pdf_id = entity.get("pdf_id")
 	else:
 		email = getattr(entity, "email", None)
 		phone = getattr(entity, "phone", None)
-
-	return {"id": idv, "score": score, "email": email, "phone": phone}
+		pdf_id = getattr(entity, "pdf_id", None)
+	return {"id": idv, "score": score, "email": email, "phone": phone, "pdf_id": pdf_id}
 
 @app.teardown_appcontext
 def _close_milvus(_=None):
@@ -145,6 +154,13 @@ def _close_milvus(_=None):
 		except Exception:
 			pass
 		
+
+@app.get("/pdf/<pdf_id>.pdf")
+def serve_pdf(pdf_id):
+	file_path = PDF_STORAGE / f"{pdf_id}.pdf"
+	if not file_path.exists():
+		return {"error": "PDF not found"}, 404
+	return send_file(str(file_path), mimetype="application/pdf")
 
 @app.get("/eligible-candidates")
 def get_eligible_candidates():
@@ -161,7 +177,7 @@ def get_eligible_candidates():
 		collection_name="demo_collection",
 		data=[query_vec],
 		limit=k, 
-		output_fields=["email", "phone"],
+		output_fields=["email", "phone", "pdf_id"],
 	)
 	print(res)
 
@@ -183,9 +199,11 @@ def upload_cv():
 	file = request.files.get("file")
 	if not file:
 		return {"error": "missing form field 'file'"}, 400
-
+	
+	
 	try:
-		buffer = BytesIO(file.read())
+		file_bytes = file.read()
+		buffer = BytesIO(file_bytes)
 		with pdfplumber.open(buffer) as pdf:
 			pages = pdf.pages
 			text = []
@@ -196,21 +214,30 @@ def upload_cv():
 	except Exception as e:
 		return {"error": f"failed to read PDF: {e}"}
 	
+	pdf_id = str(uuid.uuid4())  
+	filename = secure_filename(f"{pdf_id}.pdf")
+	file_path = PDF_STORAGE / filename
+	
+	with open(file_path, "wb") as f:
+		f.write(file_bytes)
+	
 	metadata, clean_text = extract_metadata(full_text)
-	broken_text = split_sections(clean_text)
+	
+	clean_text = _normalize_whitespace(clean_text)
 
 	emb = embedder.encode(clean_text).tolist()
 	data = {
 		"vector": emb,
 		"email": metadata.get("email", ""),
 		"phone": metadata.get("phone", ""),
+		"pdf_id": pdf_id
 	}
 
 	client = get_milvus()
 	ensure_collection(client)
 	res = client.insert(collection_name="demo_collection", data=data)
 
-	return { "pages": len(pages), "excerpt": broken_text }
+	return { "pages": len(pages), "excerpt": clean_text }
 
 
 if __name__ == "__main__":
