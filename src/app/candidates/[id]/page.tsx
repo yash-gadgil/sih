@@ -33,7 +33,17 @@ export default async function CandidatePage({ params }: PageProps) {
                                     <p className="text-sm text-gray-500 mt-1">{[candidate.sector, candidate.location].filter(Boolean).join(' • ')}</p>
                                 )}
                             </div>
-                            <div className="ml-4">
+                            <div className="ml-4 flex items-center gap-3">
+                                {candidate.pdfUrl && (
+                                    <a
+                                        href={candidate.pdfUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center px-3 py-1 rounded-md text-sm font-medium border border-primary text-primary hover:bg-primary/10"
+                                    >
+                                        View PDF
+                                    </a>
+                                )}
                                 <span className="inline-flex items-center px-3 py-1 rounded-md text-sm font-medium bg-secondary text-white">Score: {Math.round(candidate.score)}</span>
                             </div>
                         </div>

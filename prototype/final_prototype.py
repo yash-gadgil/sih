@@ -165,6 +165,7 @@ def serve_pdf(pdf_id):
 @app.get("/eligible-candidates")
 def get_eligible_candidates():
 	query = request.args.get("q", "")
+	
 	try:
 		k = int(request.args.get("k", request.args.get("limit", 2)))
 	except ValueError:
@@ -177,7 +178,7 @@ def get_eligible_candidates():
 		collection_name="demo_collection",
 		data=[query_vec],
 		limit=k, 
-		output_fields=["email", "phone", "pdf_id"],
+		output_fields=["email", "phone", "pdf_id", "name"],
 	)
 	print(res)
 
@@ -211,6 +212,8 @@ def upload_cv():
 				page_txt = p.extract_text() or " "
 				text.append(page_txt)
 			full_text = " ".join(text)
+			# Heuristic candidate name: first non-empty line of the first page
+			first_page_text = text[0] if text else ""
 	except Exception as e:
 		return {"error": f"failed to read PDF: {e}"}
 	
@@ -222,15 +225,32 @@ def upload_cv():
 		f.write(file_bytes)
 	
 	metadata, clean_text = extract_metadata(full_text)
+
+	# Derive a display name
+	candidate_name = ""
+	if first_page_text:
+		for ln in first_page_text.splitlines():
+			ln = ln.strip()
+			if ln:
+				candidate_name = ln[:80]
+				break
+	if not candidate_name and metadata.get("email"):
+		local = metadata["email"].split("@")[0]
+		parts = re.split(r"[._-]+", local)
+		candidate_name = " ".join(p.capitalize() for p in parts if p)
 	
 	clean_text = _normalize_whitespace(clean_text)
+	# Short summary/excerpt for display
+	summary = clean_text[:240]
 
 	emb = embedder.encode(clean_text).tolist()
 	data = {
 		"vector": emb,
 		"email": metadata.get("email", ""),
 		"phone": metadata.get("phone", ""),
-		"pdf_id": pdf_id
+		"pdf_id": pdf_id,
+		"name": candidate_name,
+		"summary": summary,
 	}
 
 	client = get_milvus()
@@ -238,6 +258,38 @@ def upload_cv():
 	res = client.insert(collection_name="demo_collection", data=data)
 
 	return { "pages": len(pages), "excerpt": clean_text }
+
+
+@app.get("/candidates/<pdf_id>")
+def get_candidate(pdf_id):
+	"""Return minimal candidate info for a given pdf_id as JSON."""
+	client = get_milvus()
+	ensure_collection(client)
+	try:
+		res = client.query(
+			collection_name="demo_collection",
+			filter=f'pdf_id == "{pdf_id}"',
+			output_fields=["email", "phone", "pdf_id", "name", "summary"],
+		)
+	except Exception as e:
+		return {"error": f"query failed: {e}"}, 500
+
+	if not res:
+		return {"error": "candidate not found", "pdf_id": pdf_id}, 404
+
+	# client.query returns a list of dicts
+	entity = res[0] if isinstance(res, list) else res
+	base = request.host_url.rstrip("/")
+	return {
+		"id": entity.get("id"),
+		"email": entity.get("email"),
+		"phone": entity.get("phone"),
+		"pdf_id": entity.get("pdf_id", pdf_id),
+		"name": entity.get("name"),
+		"summary": entity.get("summary"),
+		"score": 0,
+		"pdf_url": f"{base}/pdf/{pdf_id}.pdf",
+	}
 
 
 if __name__ == "__main__":

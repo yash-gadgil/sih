@@ -75,6 +75,8 @@ export interface Candidate {
   skills?: string[];
   sector?: string;
   location?: string;
+  pdfId?: string;
+  pdfUrl?: string;
 }
 
 export interface CandidateSearchResponse {

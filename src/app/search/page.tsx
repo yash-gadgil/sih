@@ -122,8 +122,10 @@ export default function SearchPage() {
                                 <div className="flex items-start justify-between">
                                     <div>
                                         <h3 className="text-lg font-semibold text-text">
-                                            {c.id ? (
-                                                <a className="text-text hover:underline" href={`/candidates/${c.id}`}>{c.name || 'Candidate'}</a>
+                                            { (c as any).pdfId || (c as any).pdf_id ? (
+                                                <a className="text-text hover:underline" href={`/candidates/${(c as any).pdfId || (c as any).pdf_id}`}>
+                                                    {c.name || 'Candidate'}
+                                                </a>
                                             ) : (
                                                 c.name || 'Candidate'
                                             )}
@@ -137,7 +139,17 @@ export default function SearchPage() {
                                             </div>
                                         )}
                                     </div>
-                                    <div className="ml-4">
+                                    <div className="ml-4 flex items-center gap-3">
+                                        {c.pdfUrl && (
+                                            <a
+                                                href={c.pdfUrl}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="inline-flex items-center px-3 py-1 rounded-md text-sm font-medium border border-primary text-primary hover:bg-primary/10"
+                                            >
+                                                View PDF
+                                            </a>
+                                        )}
                                         <span className="inline-flex items-center px-3 py-1 rounded-md text-sm font-medium bg-secondary text-white">Score: {Math.round(c.score)}</span>
                                     </div>
                                 </div>

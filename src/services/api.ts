@@ -133,13 +133,42 @@ export const candidateApi = {
     return response.json();
   },
   getCandidate: async (id: string): Promise<CandidateDetail> => {
-    const url = `${apiClient.getBaseURL()}/candidates/${id}`;
-    const response = await fetch(url, { method: 'GET', cache: 'no-store' });
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ message: `Fetch failed (${response.status})` }));
-      throw new Error(errorData.message || 'Failed to fetch candidate');
+    // Use absolute backend URL (server-side fetch requires absolute URLs)
+    const base = apiClient.getBaseURL();
+    const url = `${base}/candidates/${encodeURIComponent(id)}`;
+    try {
+      const response = await fetch(url, { method: 'GET', cache: 'no-store' });
+      if (!response.ok) {
+        if (response.status === 404) {
+          // Fallback: return minimal info so the page still shows a PDF link
+          return {
+            id,
+            score: 0,
+            pdfUrl: `${base}/pdf/${id}.pdf`,
+            pdfId: id,
+          } as unknown as CandidateDetail;
+        }
+        const errorData = await response.json().catch(() => ({ message: `Fetch failed (${response.status})` }));
+        // On any other upstream error, degrade gracefully with minimal fields
+        return {
+          id,
+          score: 0,
+          pdfUrl: `${base}/pdf/${id}.pdf`,
+          pdfId: id,
+          // Include message for debugging surfaces if needed
+          ...(errorData?.message ? { summary: `Upstream error: ${errorData.message}` } : {}),
+        } as unknown as CandidateDetail;
+      }
+      return response.json();
+    } catch (err) {
+      // Network or parsing failure: degrade gracefully
+      return {
+        id,
+        score: 0,
+        pdfUrl: `${base}/pdf/${id}.pdf`,
+        pdfId: id,
+      } as unknown as CandidateDetail;
     }
-    return response.json();
   },
 };
 
