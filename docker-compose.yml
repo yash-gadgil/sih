@@ -1,0 +1,28 @@
+version: '3.8'
+services:
+  frontend:
+    build: .
+    ports:
+      - '3000:3000'
+    environment:
+      - NEXT_PUBLIC_BASE_URL=http://backend:5000
+      - NEXT_TELEMETRY_DISABLED=1
+    depends_on:
+      - backend
+
+  backend:
+    build:
+      context: ./prototype
+    ports:
+      - '5000:5000'
+    environment:
+      - MILVUS_LITE_DB=/data/milvus.db
+    volumes:
+      - ./prototype/resume_holder:/app/../resume_holder
+
+  # Optional: run Milvus or use a mock in the prototype. This is a placeholder service
+  # milvus:
+  #   image: milvusdb/milvus:v2.2.15-20230927-d2f4106
+  #   ports:
+  #     - '19530:19530'
+  #   command: ["milvus", "run", "standalone"]
