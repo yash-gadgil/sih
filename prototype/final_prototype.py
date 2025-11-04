@@ -121,16 +121,26 @@ def _to_plain(hit):
 		entity = hit.get("entity") or {}
 		if not isinstance(entity, dict):
 			entity = {}
+		raw_dist = hit.get("distance") or hit.get("score")
+		try:
+			distance = float(raw_dist) if raw_dist is not None else None
+		except (TypeError, ValueError):
+			distance = None
 		return {
 			"id": hit.get("id"),
-			"score": hit.get("distance") or hit.get("score"),
+			"distance": distance,
+			"score": distance, 
 			"email": entity.get("email"),
 			"phone": entity.get("phone"),
 			"pdf_id": entity.get("pdf_id"),
 		}
 	
 	idv = getattr(hit, "id", None)
-	score = getattr(hit, "distance", getattr(hit, "score", None))
+	raw_dist = getattr(hit, "distance", getattr(hit, "score", None))
+	try:
+		distance = float(raw_dist) if raw_dist is not None else None
+	except (TypeError, ValueError):
+		distance = None
 	entity = getattr(hit, "entity", None)
 	email = None
 	phone = None
@@ -143,7 +153,7 @@ def _to_plain(hit):
 		email = getattr(entity, "email", None)
 		phone = getattr(entity, "phone", None)
 		pdf_id = getattr(entity, "pdf_id", None)
-	return {"id": idv, "score": score, "email": email, "phone": phone, "pdf_id": pdf_id}
+	return {"id": idv, "distance": distance, "score": distance, "email": email, "phone": phone, "pdf_id": pdf_id}
 
 @app.teardown_appcontext
 def _close_milvus(_=None):
@@ -212,7 +222,7 @@ def upload_cv():
 				page_txt = p.extract_text() or " "
 				text.append(page_txt)
 			full_text = " ".join(text)
-			# Heuristic candidate name: first non-empty line of the first page
+			
 			first_page_text = text[0] if text else ""
 	except Exception as e:
 		return {"error": f"failed to read PDF: {e}"}
@@ -226,7 +236,7 @@ def upload_cv():
 	
 	metadata, clean_text = extract_metadata(full_text)
 
-	# Derive a display name
+	
 	candidate_name = ""
 	if first_page_text:
 		for ln in first_page_text.splitlines():
@@ -240,7 +250,7 @@ def upload_cv():
 		candidate_name = " ".join(p.capitalize() for p in parts if p)
 	
 	clean_text = _normalize_whitespace(clean_text)
-	# Short summary/excerpt for display
+	
 	summary = clean_text[:240]
 
 	emb = embedder.encode(clean_text).tolist()
@@ -277,7 +287,7 @@ def get_candidate(pdf_id):
 	if not res:
 		return {"error": "candidate not found", "pdf_id": pdf_id}, 404
 
-	# client.query returns a list of dicts
+	
 	entity = res[0] if isinstance(res, list) else res
 	base = request.host_url.rstrip("/")
 	return {

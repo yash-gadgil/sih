@@ -150,7 +150,7 @@ export default function SearchPage() {
                                                 View PDF
                                             </a>
                                         )}
-                                        <span className="inline-flex items-center px-3 py-1 rounded-md text-sm font-medium bg-secondary text-white">Score: {Math.round(c.score)}</span>
+                                        <span className="inline-flex items-center px-3 py-1 rounded-md text-sm font-medium bg-secondary text-white">Score: {typeof (c as any).distance === 'number' ? (c as any).distance.toFixed(4) : Math.round(c.score)}</span>
                                     </div>
                                 </div>
                                 {(c.sector || c.location) && (
