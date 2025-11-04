@@ -7,3 +7,4 @@ python-dotenv
 tika
 scikit-learn
 flask-cors
+faiss-cpu
