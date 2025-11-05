@@ -2,23 +2,25 @@
 
 interface EnvConfig {
   BASE_URL: string;
-  NODE_ENV: 'development' | 'production' | 'test';
+  NODE_ENV: "development" | "production" | "test";
   API_TIMEOUT?: number;
 }
 
 // Validate required environment variables
 function validateEnv(): EnvConfig {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
-  
+
   if (!baseUrl) {
-    console.warn('NEXT_PUBLIC_BASE_URL is not set, using default: http://127.0.0.1:5000');
+    console.warn(
+      "NEXT_PUBLIC_BASE_URL is not set, using default: http://127.0.0.1:5001"
+    );
   }
 
   return {
-  BASE_URL: baseUrl || 'http://127.0.0.1:5000',
-    NODE_ENV: (process.env.NODE_ENV as EnvConfig['NODE_ENV']) || 'development',
-    API_TIMEOUT: process.env.NEXT_PUBLIC_API_TIMEOUT 
-      ? parseInt(process.env.NEXT_PUBLIC_API_TIMEOUT, 10) 
+    BASE_URL: baseUrl || "http://127.0.0.1:5001",
+    NODE_ENV: (process.env.NODE_ENV as EnvConfig["NODE_ENV"]) || "development",
+    API_TIMEOUT: process.env.NEXT_PUBLIC_API_TIMEOUT
+      ? parseInt(process.env.NEXT_PUBLIC_API_TIMEOUT, 10)
       : undefined,
   };
 }
@@ -27,9 +29,9 @@ function validateEnv(): EnvConfig {
 export const env = validateEnv();
 
 // Helper functions
-export const isDevelopment = env.NODE_ENV === 'development';
-export const isProduction = env.NODE_ENV === 'production';
-export const isTest = env.NODE_ENV === 'test';
+export const isDevelopment = env.NODE_ENV === "development";
+export const isProduction = env.NODE_ENV === "production";
+export const isTest = env.NODE_ENV === "test";
 
 // API configuration helpers
 export const getApiBaseUrl = (): string => env.BASE_URL;
@@ -41,5 +43,5 @@ export function getEnvVar(key: string, fallback?: string): string {
   if (!value && fallback === undefined) {
     throw new Error(`Required environment variable ${key} is not set`);
   }
-  return value || fallback || '';
+  return value || fallback || "";
 }

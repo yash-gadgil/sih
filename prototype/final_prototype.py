@@ -8,14 +8,9 @@ import re
 from pymilvus import MilvusClient 
 import importlib
 
-# Optional lightweight in-process vector store (FAISS) for local/dev use.
-# Try absolute import first (works when running the script directly), then
-# fall back to a relative import for package-based runs. If neither works we
-# leave MilvusLite = None and will attempt a lazy import inside get_milvus().
 MilvusLite = None
 try:
-	# when running as a script the package context may be absent, so absolute
-	# import from the current working directory is preferred
+	
 	from milvus_lite import MilvusLite as _MilvusLite
 	MilvusLite = _MilvusLite
 except Exception:
@@ -30,7 +25,7 @@ from werkzeug.utils import secure_filename
 
 embedder = SentenceTransformer("all-MiniLM-L6-v2")
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 
 PDF_STORAGE = Path(app.root_path).parent / "resume_holder"
@@ -54,24 +49,24 @@ _PHONE_PATTERNS = [
 
 
 def get_milvus():
-	# If MILVUS_LITE_DB is set, use the FAISS-backed MilvusLite in-process store
+	
 	lite_path = os.environ.get('MILVUS_LITE_DB')
 	if lite_path:
 		if "milvus" not in g:
-			# lazy import in case faiss isn't installed
+			
 			if MilvusLite is None:
 				try:
 					module = importlib.import_module('milvus_lite')
 					_MilvusLite = getattr(module, 'MilvusLite')
 					g.milvus = _MilvusLite(lite_path, dimension=384)
 				except Exception:
-					# Re-raise so caller sees an import error with traceback
+					
 					raise
 			else:
 				g.milvus = MilvusLite(lite_path, dimension=384)
 		return g.milvus
 
-	# Fallback: use real pymilvus client (server-backed)
+	
 	if "milvus" not in g:
 		g.milvus = MilvusClient(DB_PATH)
 	return g.milvus
@@ -339,9 +334,7 @@ def get_candidate(pdf_id):
 
 
 if __name__ == "__main__":
-	# When running inside Docker we must bind to 0.0.0.0 so other containers
-	# (and the host) can reach the service. Allow debug mode to be controlled
-	# via the FLASK_DEBUG environment variable.
+	
 	host = os.environ.get("FLASK_HOST", "0.0.0.0")
 	debug = os.environ.get("FLASK_DEBUG", "1") == "1"
 	app.run(host=host, port=5000, debug=debug, use_reloader=False)

@@ -1,6 +1,10 @@
 FROM node:18-alpine AS builder
 WORKDIR /app
 
+# Accept build arguments
+ARG NEXT_PUBLIC_BASE_URL=http://backend:5000
+ENV NEXT_PUBLIC_BASE_URL=$NEXT_PUBLIC_BASE_URL
+
 # Install dependencies
 COPY package*.json ./
 RUN npm ci --silent

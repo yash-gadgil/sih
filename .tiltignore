@@ -1,0 +1,55 @@
+# .tiltignore
+# Files and directories to ignore when syncing with Tilt live_update
+
+# Node modules
+node_modules/
+**/node_modules/
+
+# Next.js build cache
+.next/
+**/.next/
+
+# Python cache
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Docker
+.dockerignore
+Dockerfile
+docker-compose.yml
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env.local
+.env*.local
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Misc
+*.md
+README.md
+LICENSE

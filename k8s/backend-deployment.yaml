@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: sih
+  labels:
+    app: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+        - name: backend
+          image: sih-backend:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 5000
+              name: http
+          env:
+            - name: MILVUS_LITE_DB
+              value: /data/milvus.db
+          volumeMounts:
+            - name: resume-storage
+              mountPath: /app/../resume_holder
+            - name: milvus-data
+              mountPath: /data
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
+            limits:
+              memory: "2Gi"
+              cpu: "1000m"
+          livenessProbe:
+            httpGet:
+              path: /eligible-candidates?q=test&k=1
+              port: 5000
+            initialDelaySeconds: 60
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /eligible-candidates?q=test&k=1
+              port: 5000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+      volumes:
+        - name: resume-storage
+          persistentVolumeClaim:
+            claimName: resume-storage-pvc
+        - name: milvus-data
+          persistentVolumeClaim:
+            claimName: milvus-data-pvc

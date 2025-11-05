@@ -1,9 +1,12 @@
-version: '3.8'
+version: "3.8"
 services:
   frontend:
-    build: .
+    build:
+      context: .
+      args:
+        NEXT_PUBLIC_BASE_URL: http://backend:5000
     ports:
-      - '3000:3000'
+      - "3000:3000"
     environment:
       - NEXT_PUBLIC_BASE_URL=http://backend:5000
       - NEXT_TELEMETRY_DISABLED=1
@@ -14,7 +17,7 @@ services:
     build:
       context: ./prototype
     ports:
-      - '5000:5000'
+      - "5001:5000"
     environment:
       - MILVUS_LITE_DB=/data/milvus.db
     volumes:

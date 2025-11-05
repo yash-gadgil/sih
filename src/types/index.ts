@@ -72,6 +72,7 @@ export interface Candidate {
   email?: string;
   phone?: string;
   score: number;
+  distance?: number; // standardized distance (cosine similarity or transformed metric)
   skills?: string[];
   sector?: string;
   location?: string;
